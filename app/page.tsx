@@ -1,116 +1,81 @@
-'use client';
-
-import { useState } from 'react';
+"use client";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) router.push("/dashboard");
+  }, [user, router]);
+
+  const features = [
+    { icon: "✍️", title: "Write Once", desc: "Create content in one place" },
+    { icon: "📤", title: "Publish Everywhere", desc: "Auto-post to all your social accounts" },
+    { icon: "📊", title: "Real Analytics", desc: "Track engagement across platforms" },
+    { icon: "⏰", title: "Schedule Posts", desc: "Plan content weeks in advance" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">SocialForge Creator</h1>
-              <p className="text-gray-600 mt-1">AI-Powered Multi-Platform Content Creation</p>
-            </div>
-            <div className="text-sm text-gray-500">
-              <p>🔒 TOS-Compliant • 🎯 Unique Content Only • 👤 Human Approval Required</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Hero Section */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto px-4 py-20">
+        <div className="text-center mb-20">
+          <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
+            Manage Your Social <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Presence</span>
+          </h1>
+          <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+            One dashboard. All your social media. Post to Twitter, Instagram, TikTok—and everywhere else—from one beautiful interface.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Link href="/signup" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg font-semibold transition-all">
+              Start Free
+            </Link>
+            <Link href="/login" className="border border-slate-600 text-white px-8 py-4 rounded-lg font-semibold hover:border-slate-500 transition-all">
+              Sign In
+            </Link>
           </div>
         </div>
-      </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="container">
-          <div className="flex gap-8">
-            {['dashboard', 'niche', 'create', 'queue', 'analytics', 'monetize'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          {features.map((feature, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-slate-800/50 backdrop-blur-xl p-6 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-all">
+              <div className="text-3xl mb-3">{feature.icon}</div>
+              <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+              <p className="text-slate-400">{feature.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="grid md:grid-cols-3 gap-8 text-center py-20 border-t border-slate-700">
+          <div>
+            <div className="text-4xl font-bold text-indigo-400 mb-2">0</div>
+            <p className="text-slate-400">Active Creators</p>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-indigo-400 mb-2">0</div>
+            <p className="text-slate-400">Posts Published</p>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-indigo-400 mb-2">0</div>
+            <p className="text-slate-400">Platforms Connected</p>
           </div>
         </div>
-      </nav>
+      </motion.div>
 
-      {/* Main Content */}
-      <main className="container py-8">
-        {activeTab === 'dashboard' && <DashboardTab />}
-        {activeTab === 'niche' && <NicheTab />}
-        {activeTab === 'create' && <CreateTab />}
-        {activeTab === 'queue' && <QueueTab />}
-        {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'monetize' && <MonetizeTab />}
-      </main>
-    </div>
-  );
-}
-
-function DashboardTab() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <div className="card">
-        <p className="text-gray-600 text-sm">Content Ideas This Month</p>
-        <p className="text-3xl font-bold text-blue-600 mt-2">24</p>
-      </div>
-      <div className="card">
-        <p className="text-gray-600 text-sm">Approved for Publishing</p>
-        <p className="text-3xl font-bold text-green-600 mt-2">18</p>
-      </div>
-      <div className="card">
-        <p className="text-gray-600 text-sm">In Review Queue</p>
-        <p className="text-3xl font-bold text-yellow-600 mt-2">6</p>
-      </div>
-      <div className="card">
-        <p className="text-gray-600 text-sm">Estimated Monthly Income</p>
-        <p className="text-3xl font-bold text-purple-600 mt-2">$1,240</p>
-      </div>
-      <div className="card md:col-span-2">
-        <h3 className="text-lg font-semibold mb-4">Top Niches This Week</h3>
-        <ul className="space-y-2">
-          <li className="flex justify-between"><span>AI & Machine Learning</span><span className="font-bold">15 ideas</span></li>
-          <li className="flex justify-between"><span>Sustainable Living</span><span className="font-bold">12 ideas</span></li>
-          <li className="flex justify-between"><span>Digital Marketing</span><span className="font-bold">10 ideas</span></li>
-        </ul>
-      </div>
-      <div className="card md:col-span-2">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="space-y-2">
-          <button className="btn-primary w-full">Explore Niche Ideas</button>
-          <button className="btn-secondary w-full">Create New Content</button>
-          <button className="btn-secondary w-full">Review Pending Items</button>
-        </div>
+      {/* CTA Footer */}
+      <div className="bg-slate-800/50 backdrop-blur-xl border-t border-slate-700 py-16 text-center">
+        <h2 className="text-3xl font-bold text-white mb-4">Ready to level up your social game?</h2>
+        <Link href="/signup" className="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-lg font-semibold hover:shadow-lg transition-all">
+          Get Started Free
+        </Link>
       </div>
     </div>
   );
-}
-
-function NicheTab() {
-  return <div className="card"><p className="text-gray-600">Niche Intelligence Engine - Coming Soon</p></div>;
-}
-
-function CreateTab() {
-  return <div className="card"><p className="text-gray-600">Content Lab - Create Unique Content - Coming Soon</p></div>;
-}
-
-function QueueTab() {
-  return <div className="card"><p className="text-gray-600">Review Queue - Human Approval Required - Coming Soon</p></div>;
-}
-
-function AnalyticsTab() {
-  return <div className="card"><p className="text-gray-600">Analytics Dashboard - Coming Soon</p></div>;
-}
-
-function MonetizeTab() {
-  return <div className="card"><p className="text-gray-600">Monetization Tracker - Coming Soon</p></div>;
 }
