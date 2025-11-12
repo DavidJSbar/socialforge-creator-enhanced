@@ -1,0 +1,34 @@
+'use client';
+
+import Card from '@/app/components/ui/Card';
+import Tabs from '@/app/components/ui/Tabs';
+
+export default function AnalyticsPage() {
+  const tabs = [
+    { id: 'overview', label: 'Overview', content: <OverviewTab /> },
+    { id: 'posts', label: 'Posts', content: <PostsTab /> },
+    { id: 'followers', label: 'Followers', content: <FollowersTab /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+        <p className="text-gray-600 mt-2">Track your content performance and engagement</p>
+      </div>
+      <Card><Tabs tabs={tabs} /></Card>
+    </div>
+  );
+}
+
+function OverviewTab() {
+  return <div className="py-8 text-center text-gray-600">📊 Analytics data coming soon</div>;
+}
+
+function PostsTab() {
+  return <div className="py-8 text-center text-gray-600">📝 Posts analytics coming soon</div>;
+}
+
+function FollowersTab() {
+  return <div className="py-8 text-center text-gray-600">👥 Followers analytics coming soon</div>;
+}
