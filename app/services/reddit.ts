@@ -3,7 +3,10 @@
  * Integrates Reddit API for market research and content discovery
  */
 
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { ExternalAPIError } from '@/app/lib/errors';
+import { API_ENDPOINTS, USER_AGENT } from '@/app/lib/constants';
+import { retryWithBackoff } from '@/app/lib/async-utils';
 
 export interface RedditOpportunity {
   id: string;
@@ -28,8 +31,26 @@ export interface RedditSearchResult {
   timestamp: Date;
 }
 
-const REDDIT_API_BASE = 'https://www.reddit.com';
-const USER_AGENT = 'SocialForge/1.0 (+https://socialforge.app)';
+interface RedditPostData {
+  id: string;
+  subreddit: string;
+  title: string;
+  selftext?: string;
+  link_flair_text?: string;
+  author?: string;
+  score?: number;
+  num_comments?: number;
+  permalink: string;
+  created_utc: number;
+}
+
+interface RedditAPIResponse {
+  data: {
+    children: Array<{
+      data: RedditPostData;
+    }>;
+  };
+}
 
 /**
  * Search Reddit for opportunities and insights
@@ -41,35 +62,47 @@ export async function searchReddit(
 ): Promise<RedditSearchResult> {
   try {
     const searchUrl = subreddit
-      ? `${REDDIT_API_BASE}/r/${subreddit}/search.json`
-      : `${REDDIT_API_BASE}/r/all/search.json`;
+      ? `${API_ENDPOINTS.reddit}/r/${subreddit}/search.json`
+      : `${API_ENDPOINTS.reddit}/r/all/search.json`;
 
-    const response = await axios.get(searchUrl, {
-      params: {
-        q: query,
-        sort: 'relevance',
-        t: 'all',
-        limit,
-        type: 'link,comment',
-      },
-      headers: {
-        'User-Agent': USER_AGENT,
-      },
-    });
+    const response = await retryWithBackoff(
+      async () => axios.get<RedditAPIResponse>(searchUrl, {
+        params: {
+          q: query,
+          sort: 'relevance',
+          t: 'all',
+          limit,
+          type: 'link,comment',
+        },
+        headers: {
+          'User-Agent': USER_AGENT,
+        },
+      }),
+      {
+        onRetry: (attempt, error) => {
+          console.warn(`Reddit API retry attempt ${attempt}:`, error.message);
+        },
+      }
+    );
 
     const opportunities = response.data.data.children
-      .map((item: any) => parseRedditPost(item.data))
-      .filter((op: RedditOpportunity | null) => op !== null);
+      .map((item) => parseRedditPost(item.data))
+      .filter((op): op is RedditOpportunity => op !== null);
 
     return {
-      opportunities: opportunities as RedditOpportunity[],
+      opportunities,
       total_count: opportunities.length,
       query,
       timestamp: new Date(),
     };
   } catch (error) {
-    console.error('Reddit search error:', error);
-    throw new Error('Failed to search Reddit');
+    if (error instanceof AxiosError) {
+      throw new ExternalAPIError(
+        `Reddit API error: ${error.message}`,
+        'reddit'
+      );
+    }
+    throw new ExternalAPIError('Failed to search Reddit', 'reddit');
   }
 }
 
@@ -82,32 +115,39 @@ export async function getTrendingTopics(
   limit: number = 10
 ): Promise<RedditOpportunity[]> {
   try {
-    const response = await axios.get(
-      `${REDDIT_API_BASE}/r/${subreddit}/top.json`,
-      {
-        params: {
-          t: timeframe,
-          limit,
-        },
-        headers: {
-          'User-Agent': USER_AGENT,
-        },
-      }
+    const response = await retryWithBackoff(
+      async () => axios.get<RedditAPIResponse>(
+        `${API_ENDPOINTS.reddit}/r/${subreddit}/top.json`,
+        {
+          params: {
+            t: timeframe,
+            limit,
+          },
+          headers: {
+            'User-Agent': USER_AGENT,
+          },
+        }
+      )
     );
 
     return response.data.data.children
-      .map((item: any) => parseRedditPost(item.data))
-      .filter((op: RedditOpportunity | null) => op !== null) as RedditOpportunity[];
+      .map((item) => parseRedditPost(item.data))
+      .filter((op): op is RedditOpportunity => op !== null);
   } catch (error) {
-    console.error('Trending topics error:', error);
-    throw new Error('Failed to fetch trending topics');
+    if (error instanceof AxiosError) {
+      throw new ExternalAPIError(
+        `Reddit API error: ${error.message}`,
+        'reddit'
+      );
+    }
+    throw new ExternalAPIError('Failed to fetch trending topics', 'reddit');
   }
 }
 
 /**
  * Parse and classify Reddit posts
  */
-function parseRedditPost(data: any): RedditOpportunity | null {
+function parseRedditPost(data: RedditPostData): RedditOpportunity | null {
   if (!data.title || !data.subreddit) return null;
 
   const type = classifyPost(data);
@@ -135,7 +175,7 @@ function parseRedditPost(data: any): RedditOpportunity | null {
 /**
  * Classify post type based on keywords and content
  */
-function classifyPost(data: any): 'pain_point' | 'solution_request' | 'discussion' | 'question' {
+function classifyPost(data: RedditPostData): 'pain_point' | 'solution_request' | 'discussion' | 'question' {
   const text = (data.title + ' ' + (data.selftext || '')).toLowerCase();
   
   const painPointKeywords = ['problem', 'issue', 'bug', 'broken', 'fail', 'error', 'struggling', 'frustrated', 'terrible', 'worst', 'hate', 'difficult'];
@@ -183,7 +223,7 @@ function analyzeSentiment(text: string): 'negative' | 'neutral' | 'positive' {
 /**
  * Calculate engagement score
  */
-function calculateEngagementScore(data: any): number {
+function calculateEngagementScore(data: RedditPostData): number {
   const scoreWeight = 0.4;
   const commentWeight = 0.6;
   
