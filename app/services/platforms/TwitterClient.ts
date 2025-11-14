@@ -1,7 +1,40 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { ExternalAPIError } from '@/app/lib/errors';
+import { API_ENDPOINTS } from '@/app/lib/constants';
+import { retryWithBackoff } from '@/app/lib/async-utils';
 
-const TWITTER_API_BASE = 'https://api.twitter.com/2';
+interface TweetPayload {
+  text: string;
+  media?: {
+    media_ids: string[];
+  };
+}
 
+interface TweetResponse {
+  data: {
+    id: string;
+    text: string;
+  };
+}
+
+interface TweetMetricsResponse {
+  data: {
+    id: string;
+    text: string;
+    public_metrics: {
+      retweet_count: number;
+      reply_count: number;
+      like_count: number;
+      quote_count: number;
+      impression_count: number;
+    };
+  };
+}
+
+/**
+ * Twitter API Client
+ * Handles tweet creation and metrics retrieval
+ */
 export class TwitterClient {
   private accessToken: string;
 
@@ -9,46 +42,79 @@ export class TwitterClient {
     this.accessToken = accessToken;
   }
 
-  async createTweet(text: string, mediaIds?: string[]) {
+  /**
+   * Create a new tweet
+   * @param text - Tweet text (max 280 characters)
+   * @param mediaIds - Optional array of media IDs
+   * @returns Created tweet details
+   */
+  async createTweet(text: string, mediaIds?: string[]): Promise<TweetResponse> {
     try {
-      const payload: any = { text };
+      const payload: TweetPayload = { text };
       if (mediaIds && mediaIds.length > 0) {
         payload.media = { media_ids: mediaIds };
       }
 
-      const tweetResponse = await axios.post(
-        `${TWITTER_API_BASE}/tweets`,
-        payload,
+      const response = await retryWithBackoff(
+        async () => axios.post<TweetResponse>(
+          `${API_ENDPOINTS.twitter}/tweets`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
         {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
+          onRetry: (attempt, error) => {
+            console.warn(`Twitter tweet retry attempt ${attempt}:`, error.message);
           },
         }
       );
 
-      return tweetResponse.data;
+      return response.data;
     } catch (error) {
-      throw new Error(`Twitter tweet creation failed: ${error}`);
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Twitter tweet creation failed: ${error.response?.data?.detail || error.message}`,
+          'twitter'
+        );
+      }
+      throw new ExternalAPIError('Twitter tweet creation failed', 'twitter');
     }
   }
 
-  async getTweetMetrics(tweetId: string) {
+  /**
+   * Get metrics for a tweet
+   * @param tweetId - Tweet ID
+   * @returns Tweet metrics including engagement data
+   */
+  async getTweetMetrics(tweetId: string): Promise<TweetMetricsResponse> {
     try {
-      const metricsResponse = await axios.get(
-        `${TWITTER_API_BASE}/tweets/${tweetId}`,
-        {
-          params: {
-            'tweet.fields': 'public_metrics',
-          },
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-          },
-        }
+      const response = await retryWithBackoff(
+        async () => axios.get<TweetMetricsResponse>(
+          `${API_ENDPOINTS.twitter}/tweets/${tweetId}`,
+          {
+            params: {
+              'tweet.fields': 'public_metrics',
+            },
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+            },
+          }
+        )
       );
 
-      return metricsResponse.data;
+      return response.data;
     } catch (error) {
-      throw new Error(`Twitter metrics fetch failed: ${error}`);
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Twitter metrics fetch failed: ${error.response?.data?.detail || error.message}`,
+          'twitter'
+        );
+      }
+      throw new ExternalAPIError('Twitter metrics fetch failed', 'twitter');
     }
   }
 }
