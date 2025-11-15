@@ -219,7 +219,7 @@ Supabase Project
    - Test RLS policies
 
 3. **Figma Setup**
-   - Create file: "SocialForge Creator Design System"
+   - Create file: "SocialPilot Creator Design System"
    - Create pages per spec
    - Add design tokens
    - Share with team

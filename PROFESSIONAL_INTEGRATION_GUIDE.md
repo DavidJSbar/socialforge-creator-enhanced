@@ -30,7 +30,7 @@ echo 'SUPABASE_SERVICE_KEY=your_service_key' >> .env.local
 ### Step 3: Set Up Figma
 ```
 1. Go to https://figma.com
-2. Create new file: "SocialForge Creator Design System"
+2. Create new file: "SocialPilot Creator Design System"
 3. Follow FIGMA_DESIGN_SYSTEM.md for pages to create
 4. Invite team members to collaborate
 ```

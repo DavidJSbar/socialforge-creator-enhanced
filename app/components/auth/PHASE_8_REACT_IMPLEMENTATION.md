@@ -1,7 +1,7 @@
 # Phase 8: React Component Implementation
 
 ## Overview
-Phase 8 involves building all React components for the SocialForge Creator application. The components are built using Next.js 14, Tailwind CSS, and follow the design specifications from Phase 7.
+Phase 8 involves building all React components for the SocialPilot Creator application. The components are built using Next.js 14, Tailwind CSS, and follow the design specifications from Phase 7.
 
 ## Project Structure
 ```

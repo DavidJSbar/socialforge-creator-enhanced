@@ -1,18 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
-import { generatePostVariations, selectBestPost } from '@/lib/services/postGeneration';
-import type { RedditOpportunity } from '@/lib/services/reddit';
-import { InsightsRepository } from '@/lib/repositories/InsightsRepository';
+import { createServerClient } from '@/app/lib/supabase-server';
+import { generatePostVariations, selectBestPost } from '@/app/lib/services/postGeneration';
+import type { RedditOpportunity } from '@/app/services/reddit';
+import { InsightsRepository } from '@/app/lib/repositories/InsightsRepository';
+import { AuthError, NotFoundError, DatabaseError, handleAPIError, ValidationError } from '@/app/lib/errors';
+import { validateRequired, validatePlatforms } from '@/app/lib/validation';
+import { Platform } from '@/app/lib/constants';
 
-export async function POST(req: NextRequest) {
+/**
+ * Generate content variations from a Reddit opportunity
+ * @route POST /api/insights/generate
+ */
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const { opportunityId, platforms = ['twitter', 'linkedin', 'tiktok', 'instagram'], tone = 'casual' } = await req.json();
-    
+    // Parse and validate request body
+    const body = await req.json();
+    const { 
+      opportunityId, 
+      platforms = ['twitter', 'linkedin', 'tiktok', 'instagram'], 
+      tone = 'casual' 
+    } = body;
+
+    // Validate required fields
+    validateRequired(body, ['opportunityId']);
+
+    // Validate platforms
+    if (!validatePlatforms(platforms)) {
+      throw new ValidationError('Invalid platforms provided');
+    }
+
+    // Authenticate user
     const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !user) {
+      throw new AuthError('User not authenticated');
     }
     
     // Fetch the opportunity from the database
@@ -23,15 +45,19 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .single();
     
-    if (error || !opportunity) {
-      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
+    if (error) {
+      throw new DatabaseError(`Database error: ${error.message}`);
+    }
+
+    if (!opportunity) {
+      throw new NotFoundError('Opportunity not found');
     }
     
     // Generate post variations for the opportunity
     const response = generatePostVariations({
       opportunity: opportunity as RedditOpportunity,
-      platforms: platforms as any,
-      tone: tone as any,
+      platforms: platforms as Platform[],
+      tone: tone as 'casual' | 'professional' | 'educational',
     });
     
     // Select the best performing post
@@ -54,18 +80,22 @@ export async function POST(req: NextRequest) {
     
     if (insertError) {
       console.error('Error storing generated post:', insertError);
+      // Non-critical error, continue with response
     }
     
     return NextResponse.json({
       success: true,
-      opportunity: opportunity,
+      opportunity,
       generatedPosts: response.generatedPosts,
-      bestPost: bestPost,
+      bestPost,
       contentIdeas: response.ideas,
       timestamp: response.timestamp,
-    });
+    }, { status: 200 });
   } catch (error) {
-    console.error('Post generation error:', error);
-    return NextResponse.json({ error: 'Post generation failed' }, { status: 500 });
+    const errorResponse = handleAPIError(error);
+    return NextResponse.json(
+      { error: errorResponse.error, code: errorResponse.code },
+      { status: errorResponse.statusCode }
+    );
   }
 }

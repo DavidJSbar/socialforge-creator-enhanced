@@ -55,7 +55,7 @@ Total: ~75 minutes for Phase 21 completion
 - UI: Dashboard > Insights tab
 
 ## This Phase Enables
-✨ Reddit market research inside SocialForge
+✨ Reddit market research inside SocialPilot
 ✨ Automatic content opportunity discovery
 ✨ One-click post creation from Reddit insights
 ✨ Full end-to-end content sourcing workflow

@@ -32,7 +32,7 @@ export default function SignIn() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg mb-4">
             <span className="text-xl font-bold text-white">SF</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">SocialForge</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">SocialPilot</h1>
           <p className="text-slate-600 dark:text-slate-300">Creator Platform</p>
         </div>
 
@@ -199,7 +199,7 @@ export default function Dashboard() {
           <div className="p-6 space-y-8 h-screen overflow-y-auto">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">SF</div>
-              <span className="font-bold text-lg">SocialForge</span>
+              <span className="font-bold text-lg">SocialPilot</span>
             </div>
             <nav className="space-y-2">
               {menuItems.map((item, idx) => (

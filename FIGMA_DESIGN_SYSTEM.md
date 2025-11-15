@@ -1,4 +1,4 @@
-# Figma Design System for SocialForge Creator
+# Figma Design System for SocialPilot Creator
 
 ## Figma Setup Instructions
 
@@ -6,7 +6,7 @@
 1. Go to https://figma.com
 2. Sign in with your account
 3. Click "New file"
-4. Name it: "SocialForge Creator Design System"
+4. Name it: "SocialPilot Creator Design System"
 5. Save to a team or workspace for sharing
 
 ## 2. Design System Structure

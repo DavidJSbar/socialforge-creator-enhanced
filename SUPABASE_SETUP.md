@@ -1,4 +1,4 @@
-# Supabase Setup Guide for SocialForge Creator
+# Supabase Setup Guide for SocialPilot Creator
 
 ## 1. Create Supabase Project
 

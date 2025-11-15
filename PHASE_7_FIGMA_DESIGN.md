@@ -1,7 +1,7 @@
 # Phase 7: Figma UI Design System & Specifications
 
 ## Overview
-This document provides comprehensive UI/UX specifications for the SocialForge Creator application, based on professional Figma designs that rival Instagram and Tinder in visual quality.
+This document provides comprehensive UI/UX specifications for the SocialPilot Creator application, based on professional Figma designs that rival Instagram and Tinder in visual quality.
 
 ## Design System
 
@@ -80,7 +80,7 @@ This document provides comprehensive UI/UX specifications for the SocialForge Cr
 **Header**:
 - Height: 70px
 - Background: #3B82F6 (blue-500)
-- Logo text: "SocialForge Creator" (white, 20px, bold)
+- Logo text: "SocialPilot Creator" (white, 20px, bold)
 - Right side: User profile dropdown, notifications bell
 
 **Sidebar**:
@@ -327,7 +327,7 @@ Card contents:
 
 ## Figma File Reference
 
-**File**: SocialForge Creator
+**File**: SocialPilot Creator
 **URL**: https://www.figma.com/design/OUwoAo6bTJfwoW7aEhVFkU
 **Last Updated**: Phase 7
 **Status**: Design specifications complete, ready for component implementation

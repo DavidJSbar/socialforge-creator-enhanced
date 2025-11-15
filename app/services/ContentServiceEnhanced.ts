@@ -133,7 +133,7 @@ export class ContentServiceEnhanced {
 
   private async postToYouTube(token: string, content: string, channelId: string) {
     const client = new YouTubeClient(token, channelId);
-    return client.uploadVideo('', 'SocialForge Post', content);
+    return client.uploadVideo('', 'SocialPilot Post', content);
   }
 
   private async postToTwitter(token: string, content: string) {
