@@ -1,7 +1,34 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { ExternalAPIError } from '@/app/lib/errors';
+import { API_ENDPOINTS } from '@/app/lib/constants';
+import { retryWithBackoff } from '@/app/lib/async-utils';
 
-const FACEBOOK_API_BASE = 'https://graph.facebook.com/v18.0';
+interface FacebookPostPayload {
+  message: string;
+  access_token: string;
+  url?: string;
+}
 
+interface FacebookPostResponse {
+  id: string;
+  post_id?: string;
+}
+
+interface FacebookInsightsData {
+  name: string;
+  values: Array<{
+    value: number | Record<string, number>;
+  }>;
+}
+
+interface FacebookInsightsResponse {
+  data: FacebookInsightsData[];
+}
+
+/**
+ * Facebook API Client
+ * Handles post publishing and insights retrieval
+ */
 export class FacebookClient {
   private accessToken: string;
   private pageId: string;
@@ -11,9 +38,15 @@ export class FacebookClient {
     this.pageId = pageId;
   }
 
-  async publishPost(message: string, imageUrl?: string) {
+  /**
+   * Publish a post to Facebook page
+   * @param message - Post message/content
+   * @param imageUrl - Optional image URL to attach
+   * @returns Published post details
+   */
+  async publishPost(message: string, imageUrl?: string): Promise<FacebookPostResponse> {
     try {
-      const payload: any = {
+      const payload: FacebookPostPayload = {
         message,
         access_token: this.accessToken,
       };
@@ -22,32 +55,58 @@ export class FacebookClient {
         payload.url = imageUrl;
       }
 
-      const postResponse = await axios.post(
-        `${FACEBOOK_API_BASE}/${this.pageId}/feed`,
-        payload
-      );
-
-      return postResponse.data;
-    } catch (error) {
-      throw new Error(`Facebook post publish failed: ${error}`);
-    }
-  }
-
-  async getPostInsights(postId: string) {
-    try {
-      const insightsResponse = await axios.get(
-        `${FACEBOOK_API_BASE}/${postId}/insights`,
+      const response = await retryWithBackoff(
+        async () => axios.post<FacebookPostResponse>(
+          `${API_ENDPOINTS.facebook}/${this.pageId}/feed`,
+          payload
+        ),
         {
-          params: {
-            metric: 'post_impressions,post_reactions_by_type_total',
-            access_token: this.accessToken,
+          onRetry: (attempt, error) => {
+            console.warn(`Facebook post retry attempt ${attempt}:`, error.message);
           },
         }
       );
 
-      return insightsResponse.data;
+      return response.data;
     } catch (error) {
-      throw new Error(`Facebook insights fetch failed: ${error}`);
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Facebook post publish failed: ${error.response?.data?.error?.message || error.message}`,
+          'facebook'
+        );
+      }
+      throw new ExternalAPIError('Facebook post publish failed', 'facebook');
+    }
+  }
+
+  /**
+   * Get insights for a published post
+   * @param postId - Facebook post ID
+   * @returns Post insights including impressions and reactions
+   */
+  async getPostInsights(postId: string): Promise<FacebookInsightsResponse> {
+    try {
+      const response = await retryWithBackoff(
+        async () => axios.get<FacebookInsightsResponse>(
+          `${API_ENDPOINTS.facebook}/${postId}/insights`,
+          {
+            params: {
+              metric: 'post_impressions,post_reactions_by_type_total',
+              access_token: this.accessToken,
+            },
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Facebook insights fetch failed: ${error.response?.data?.error?.message || error.message}`,
+          'facebook'
+        );
+      }
+      throw new ExternalAPIError('Facebook insights fetch failed', 'facebook');
     }
   }
 }

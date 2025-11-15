@@ -1,7 +1,40 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { ExternalAPIError } from '@/app/lib/errors';
+import { API_ENDPOINTS } from '@/app/lib/constants';
+import { retryWithBackoff } from '@/app/lib/async-utils';
 
-const PINTEREST_API_BASE = 'https://api.pinterest.com/v5';
+interface PinterestPinPayload {
+  image_url: string;
+  description: string;
+  board_id: string;
+  link: string;
+}
 
+interface PinterestPinResponse {
+  id: string;
+  created_at: string;
+  link: string;
+  media: {
+    media_type: string;
+  };
+}
+
+interface PinterestAnalyticsMetric {
+  metric_type: string;
+  data_status: string;
+  summary_metrics: {
+    [key: string]: number;
+  };
+}
+
+interface PinterestAnalyticsResponse {
+  all: PinterestAnalyticsMetric[];
+}
+
+/**
+ * Pinterest API Client
+ * Handles pin creation and analytics retrieval
+ */
 export class PinterestClient {
   private accessToken: string;
 
@@ -9,48 +42,91 @@ export class PinterestClient {
     this.accessToken = accessToken;
   }
 
-  async createPin(imageUrl: string, description: string, boardId: string) {
+  /**
+   * Create a pin on Pinterest
+   * @param imageUrl - URL of the image to pin
+   * @param description - Pin description/caption
+   * @param boardId - Pinterest board ID to post to
+   * @returns Created pin details
+   */
+  async createPin(
+    imageUrl: string,
+    description: string,
+    boardId: string
+  ): Promise<PinterestPinResponse> {
     try {
-      const pinResponse = await axios.post(
-        `${PINTEREST_API_BASE}/pins`,
+      const payload: PinterestPinPayload = {
+        image_url: imageUrl,
+        description,
+        board_id: boardId,
+        link: imageUrl,
+      };
+
+      const response = await retryWithBackoff(
+        async () => axios.post<PinterestPinResponse>(
+          `${API_ENDPOINTS.pinterest}/pins`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
         {
-          image_url: imageUrl,
-          description,
-          board_id: boardId,
-          link: imageUrl,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
+          onRetry: (attempt, error) => {
+            console.warn(`Pinterest pin creation retry attempt ${attempt}:`, error.message);
           },
         }
       );
 
-      return pinResponse.data;
+      return response.data;
     } catch (error) {
-      throw new Error(`Pinterest pin creation failed: ${error}`);
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Pinterest pin creation failed: ${error.response?.data?.message || error.message}`,
+          'pinterest'
+        );
+      }
+      throw new ExternalAPIError('Pinterest pin creation failed', 'pinterest');
     }
   }
 
-  async getPinAnalytics(pinId: string) {
+  /**
+   * Get analytics for a pin
+   * @param pinId - Pinterest pin ID
+   * @returns Pin analytics including clicks, impressions, and saves
+   */
+  async getPinAnalytics(pinId: string): Promise<PinterestAnalyticsResponse> {
     try {
-      const analyticsResponse = await axios.get(
-        `${PINTEREST_API_BASE}/pins/${pinId}/analytics`,
-        {
-          params: {
-            start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            end_date: new Date().toISOString(),
-            metric_types: 'OUTBOUND_CLICKS,IMPRESSION,SAVE',
-          },
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-          },
-        }
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const endDate = new Date().toISOString().split('T')[0];
+
+      const response = await retryWithBackoff(
+        async () => axios.get<PinterestAnalyticsResponse>(
+          `${API_ENDPOINTS.pinterest}/pins/${pinId}/analytics`,
+          {
+            params: {
+              start_date: startDate,
+              end_date: endDate,
+              metric_types: 'OUTBOUND_CLICKS,IMPRESSION,SAVE',
+            },
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+            },
+          }
+        )
       );
 
-      return analyticsResponse.data;
+      return response.data;
     } catch (error) {
-      throw new Error(`Pinterest analytics fetch failed: ${error}`);
+      if (error instanceof AxiosError) {
+        throw new ExternalAPIError(
+          `Pinterest analytics fetch failed: ${error.response?.data?.message || error.message}`,
+          'pinterest'
+        );
+      }
+      throw new ExternalAPIError('Pinterest analytics fetch failed', 'pinterest');
     }
   }
 }
