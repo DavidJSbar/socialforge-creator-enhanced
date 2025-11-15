@@ -1,6 +1,6 @@
-# SocialForge Creator - App Directory
+# SocialPilot Creator - App Directory
 
-This directory contains the Next.js 14 application code for SocialForge Creator.
+This directory contains the Next.js 14 application code for SocialPilot Creator.
 
 ## Directory Structure
 

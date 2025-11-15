@@ -2,7 +2,7 @@
 
 ## Recommended Database Indexes
 
-These indexes will significantly improve query performance for the SocialForge application.
+These indexes will significantly improve query performance for the SocialPilot application.
 
 ### Posts Table
 

@@ -1,4 +1,4 @@
-# Technical Debt Log - SocialForge Creator Enhanced
+# Technical Debt Log - SocialPilot Creator Enhanced
 
 **Last Updated:** 2024-11-14  
 **Priority Scale:** 🔴 Critical | 🟡 High | 🟢 Medium | 🔵 Low

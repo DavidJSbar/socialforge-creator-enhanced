@@ -51,7 +51,7 @@ export default function SignIn() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-600 mb-4">
             <span className="text-white text-xl font-bold">SF</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">SocialForge Creator</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">SocialPilot Creator</h1>
           <p className="text-gray-600">Welcome back to your content creation hub</p>
         </div>
 

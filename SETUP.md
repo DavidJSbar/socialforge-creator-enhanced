@@ -1,7 +1,7 @@
-# SocialForge Creator - Setup & Deployment Guide
+# SocialPilot Creator - Setup & Deployment Guide
 
 ## Overview
-SocialForge Creator is an AI-powered, TOS-compliant multi-platform content creation tool designed for creators who want to scale ethically.
+SocialPilot Creator is an AI-powered, TOS-compliant multi-platform content creation tool designed for creators who want to scale ethically.
 
 ### Core Principles
 ✅ **Unique Content Only** - Every piece of content is unique, never duplicated

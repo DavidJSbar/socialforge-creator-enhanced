@@ -1,4 +1,4 @@
-# SocialForge Creator - Deployment Guide
+# SocialPilot Creator - Deployment Guide
 
 ## Phase 10 - Database Integration & Deployment
 

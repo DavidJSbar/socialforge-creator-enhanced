@@ -4,7 +4,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SocialForge Creator",
+  title: "SocialPilot Creator",
   description: "Premium social media management platform",
 };
 

@@ -109,7 +109,7 @@ export const API_ENDPOINTS = {
 /**
  * User agent for external API calls
  */
-export const USER_AGENT = 'SocialForge/1.0 (+https://socialforge.app)';
+export const USER_AGENT = 'SocialPilot/1.0 (+https://socialpilot.app)';
 
 /**
  * Cache durations (in seconds)
